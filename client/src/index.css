@@ -70,6 +70,8 @@ button:focus-visible {
   }
 
   button {
-    background-color: #f9f9f9;
+    background-color: #f1c2c2;
+    margin: 10px;
+    border: 1px solid black;
   }
 }
