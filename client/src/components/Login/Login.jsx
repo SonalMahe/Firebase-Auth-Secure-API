@@ -14,7 +14,6 @@ const Login = () => {
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
   const auth = getAuth(app);
@@ -31,54 +30,72 @@ const Login = () => {
   // }, []);
 
 
-  // Task B: Register with email + password
+  //  Register with email + password
   const handleRegister = async () => {
-    setError("");
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
       setUser(result.user);
-    } catch (err) {
-      setError(getReadableError(err.code));
+      
+    } catch (error) {
+      console.log("Error fetching secure data:", error.message);
     }
   };
 
   // Task B: Log in with email + password
   const handleLogin = async () => {
-    setError("");
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
       setUser(result.user);
-    } catch (err) {
-      setError(getReadableError(err.code));
+    } catch (error) {
+      console.log("Error fetching secure data:", error.message);
     }
   };
 
-  // Task A (existing): Google sign-in
+
+  // Task A: Google sign-in
   const handleGoogleSignIn = async () => {
-    setError("");
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      const token = await result.user.getIdToken(true);
+      const loggedInUser = result.user;
+      console.log("Logged in user:", loggedInUser);
+      
+
+      // Retrieve the token
+      const token = await loggedInUser.getIdToken(true);
+      console.log("Token:", token);
+
+      // Save token to localStorage (or secure storage)
       localStorage.setItem("token", token);
-      setUser(result.user);
-    } catch (err) {
-      setError(getReadableError(err.code));
+
+      // Set the user in your application state
+      setUser(loggedInUser);
+    } catch (error) {
+      console.error("Error during sign-in:", error.message);
     }
   };
+    
 
   // Task A: GitHub sign-in
   const handleGithubSignIn = async () => {
-    setError("");
     try {
       const result = await signInWithPopup(auth, githubProvider);
-      const token = await result.user.getIdToken(true);
+      const loggedInUser = result.user;
+      console.log("Logged in user:", loggedInUser);
+
+      const token = await loggedInUser.getIdToken(true);
+      console.log("Token:", token);
+
+      // Save token to localStorage (or secure storage)
       localStorage.setItem("token", token);
-      setUser(result.user);
-    } catch (err) {
-      setError(getReadableError(err.code));
+
+      // Set the user in your application state
+      setUser(loggedInUser);
+    } catch (error) {
+      console.error("Error during sign-in:", error.message);
     }
   };
 
+    
   const handleSignOut = async () => {
     try {
       await signOut(auth);
@@ -127,7 +144,7 @@ const Login = () => {
       ) : (
         <div>
           {/* Task B: Email / Password form */}
-          <h2>Email / Password</h2>
+          <h2> Email / Password</h2>
           <input
             type= "email"
             placeholder= "Email"
