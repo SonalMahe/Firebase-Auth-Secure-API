@@ -14,7 +14,7 @@ const Login = () => {
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(true);
+  // const [loading, setLoading] = useState(true);
 
   const auth = getAuth(app);
   const googleProvider = new GoogleAuthProvider();
@@ -41,13 +41,43 @@ const Login = () => {
     }
   };
 
+
+  //Documentation for email link sign-in (not implemented in this code, but useful for future reference):
+//   const actionCodeSettings = {
+//   // URL you want to redirect back to. The domain (www.example.com) for this
+//   // URL must be in the authorized domains list in the Firebase Console.
+//   url: 'https://www.example.com/finishSignUp?cartId=1234',
+//   // This must be true.
+//   handleCodeInApp: true,
+//   iOS: {
+//     bundleId: 'com.example.ios'
+//   },
+//   android: {
+//     packageName: 'com.example.android',
+//     installApp: true,
+//     minimumVersion: '12'
+//   },
+//   // The domain must be configured in Firebase Hosting and owned by the project.
+//   linkDomain: 'custom-domain.com'
+// };
+
   // Task B: Log in with email and password
   const handleLogin = async () => {
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
       setUser(result.user);
+
+      // Retrieve the token
+      const token = await loggedInUser.getIdToken(true);
+      console.log("Token:", token);
+
+      // Save token to localStorage (or secure storage)
+      localStorage.setItem("token", token);
+
+      // Set the user in your application state
+      setUser(loggedInUser);
     } catch (error) {
-      console.log("Error fetching secure data:", error.message);
+      console.error("Error during sign-in:", error.message);
     }
   };
 
