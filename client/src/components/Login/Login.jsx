@@ -41,7 +41,7 @@ const Login = () => {
     }
   };
 
-  // Task B: Log in with email + password
+  // Task B: Log in with email and password
   const handleLogin = async () => {
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
@@ -136,7 +136,10 @@ const Login = () => {
     <div>
       {user ? (
         <div>
-          <h3>Welcome, {user.displayName || user.email}</h3>
+          <h3>Welcome, {user.displayName || user.email}
+            <br />  
+            Have a great day!
+          </h3>
           <p>Email: {user.email}</p>
           <button onClick={fetchSecureData}>Fetch Secure Data</button>
           <button onClick={handleSignOut}>Sign Out</button>
