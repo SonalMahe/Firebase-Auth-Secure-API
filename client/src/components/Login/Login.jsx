@@ -6,89 +6,43 @@ import {
   getAuth,
   signInWithPopup,
   signOut,
+  onAuthStateChanged,
 } from "firebase/auth";
 import app from "../../firebase/firebase.init";
 import { useState, useEffect } from "react";
 
 const Login = () => {
+  const auth = getAuth(app);
+
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  // const [loading, setLoading] = useState(true);
 
-  const auth = getAuth(app);
   const googleProvider = new GoogleAuthProvider();
   const githubProvider = new GithubAuthProvider();
 
-  
-  // useEffect(() => {
-  //   const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-  //     setUser(currentUser);
-  //     setLoading(false);
-  //   });
-  //   return () => unsubscribe();
-  // }, []);
+  //Keep user logged in after refresh
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
 
+      if (currentUser) {
+        const token = await currentUser.getIdToken();
+        localStorage.setItem("token", token);
+      } else {
+        localStorage.removeItem("token");
+      }
+    });
 
-  //  Register with email + password
-  const handleRegister = async () => {
-    try {
-      const result = await createUserWithEmailAndPassword(auth, email, password);
-      setUser(result.user);
-      
-    } catch (error) {
-      console.log("Error fetching secure data:", error.message);
-    }
-  };
+    return () => unsubscribe();
+  }, [auth]);
 
-
-  //Documentation for email link sign-in (not implemented in this code, but useful for future reference):
-//   const actionCodeSettings = {
-//   // URL you want to redirect back to. The domain (www.example.com) for this
-//   // URL must be in the authorized domains list in the Firebase Console.
-//   url: 'https://www.example.com/finishSignUp?cartId=1234',
-//   // This must be true.
-//   handleCodeInApp: true,
-//   iOS: {
-//     bundleId: 'com.example.ios'
-//   },
-//   android: {
-//     packageName: 'com.example.android',
-//     installApp: true,
-//     minimumVersion: '12'
-//   },
-//   // The domain must be configured in Firebase Hosting and owned by the project.
-//   linkDomain: 'custom-domain.com'
-// };
-
-  // Task B: Log in with email and password
-  const handleLogin = async () => {
-    try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      setUser(result.user);
-
-      // Retrieve the token
-      const token = await loggedInUser.getIdToken(true);
-      console.log("Token:", token);
-
-      // Save token to localStorage (or secure storage)
-      localStorage.setItem("token", token);
-
-      // Set the user in your application state
-      setUser(loggedInUser);
-    } catch (error) {
-      console.error("Error during sign-in:", error.message);
-    }
-  };
-
-
-  // Task A: Google sign-in
+  //Google Login
   const handleGoogleSignIn = async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const loggedInUser = result.user;
-      console.log("Logged in user:", loggedInUser);
-      
+      console.log("User:", loggedInUser);
 
       // Retrieve the token
       const token = await loggedInUser.getIdToken(true);
@@ -103,102 +57,126 @@ const Login = () => {
       console.error("Error during sign-in:", error.message);
     }
   };
-    
 
-  // Task A: GitHub sign-in
+  // GitHub Login
   const handleGithubSignIn = async () => {
     try {
       const result = await signInWithPopup(auth, githubProvider);
-      const loggedInUser = result.user;
-      console.log("Logged in user:", loggedInUser);
-
-      const token = await loggedInUser.getIdToken(true);
-      console.log("Token:", token);
-
-      // Save token to localStorage (or secure storage)
-      localStorage.setItem("token", token);
-
-      // Set the user in your application state
-      setUser(loggedInUser);
+      setUser(result.user);
     } catch (error) {
-      console.error("Error during sign-in:", error.message);
+      console.log(error.code, error.message);
     }
   };
 
-    
+  // Register User
+  const handleRegister = async () => {
+    if (!email || !password) {
+      console.log("Enter email & password");
+      return;
+    }
+
+    try {
+      const result = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      console.log("Registered:", result.user);
+    } catch (error) {
+      console.log(error.code, error.message);
+    }
+  };
+
+  // Login User
+  const handleLogin = async (event) => {
+    event.preventDefault();
+
+    if (!email || !password) {
+      console.log("Enter email & password");
+      return;
+    }
+
+    try {
+      const result = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      setUser(result.user);
+    } catch (error) {
+      console.log(error.code, error.message);
+    }
+  };
+
+  // Logout
   const handleSignOut = async () => {
     try {
       await signOut(auth);
       setUser(null);
-      setEmail("");
-      setPassword("");
-      setError("");
-    } catch (err) {
-      console.error("Sign out error:", err.message);
+      localStorage.removeItem("token");
+      console.log("Signed out");
+    } catch (error) {
+      console.log(error.message);
     }
   };
 
+  // Fetch Secure API
   const fetchSecureData = async () => {
     try {
-      const currentUser = auth.currentUser;
-      if (!currentUser) {
-        console.log("No user is signed in.");
-        return;
-      }
-      const token = await currentUser.getIdToken(true);
-      localStorage.setItem("token", token);
+      const token = localStorage.getItem("token");
+
       const response = await fetch("http://localhost:5001/secure-data", {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-      if (response.ok) {
-        const data = await response.json();
-        console.log("Secure data:", data);
-      } else {
-        console.log("Failed to fetch secure data:", response.status);
-      }
-    } catch (err) {
-      console.log("Error fetching secure data:", err.message);
+
+      const data = await response.json();
+      console.log("Secure Data:", data);
+    } catch (error) {
+      console.log(error.message);
     }
   };
 
-
   return (
-    <div>
+    <div style={{ padding: "20px" }}>
       {user ? (
-        <div>
-          <h3>Welcome, {user.displayName || user.email}
-            <br />  
-            Have a great day!
-          </h3>
+        <>
+          <h2>Welcome, {user.displayName || "User"} </h2>
           <p>Email: {user.email}</p>
-          <button onClick={fetchSecureData}>Fetch Secure Data</button>
+
           <button onClick={handleSignOut}>Sign Out</button>
-        </div>
+          <button onClick={fetchSecureData}>Fetch Secure Data</button>
+        </>
       ) : (
-        <div>
-          {/* Task B: Email / Password form */}
-          <h2> Email / Password</h2>
-          <input
-            type= "email"
-            placeholder= "Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <input
-            type= "password"
-            placeholder= "Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <button onClick={handleRegister}>Register</button>
-          <button onClick={handleLogin}>Log in</button>
+        <>
+          <h2>Login</h2>
 
-          <hr />
-
-          {/*  sign-in */}
           <button onClick={handleGoogleSignIn}>Login with Google</button>
           <button onClick={handleGithubSignIn}>Login with GitHub</button>
-        </div>
+
+          <form onSubmit={handleLogin}>
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <br />
+
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <br />
+
+            <button type="submit">Login</button>
+          </form>
+
+          <button onClick={handleRegister}>Register</button>
+        </>
       )}
     </div>
   );
